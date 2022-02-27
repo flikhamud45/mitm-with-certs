@@ -1,0 +1,359 @@
+<!doctype html>
+<html class="no-js">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Custom mitm.Protocol" href="protocols.html" /><link rel="prev" title="How mitm works" href="../introduction/how-mitm-works.html" />
+
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.02.23"/>
+        <title>Internals of mitm - 👨‍💻 mitm</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=3c656993158f05539f962c5cea52a5e6c184bb8c" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  body[data-theme="dark"] {
+    --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+  }
+  @media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+  }
+</style></head>
+  <body>
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">👨‍💻 mitm</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">👨‍💻 mitm</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/how-mitm-works.html">How mitm works</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customizing</span></p>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Internals of <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="protocols.html">Custom <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.Protocol</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="middlewares.html">Custom <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.Middleware</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../module/core.html">core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module/crypto.html">crypto</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module/protocol.html">protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module/middleware.html">middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module/mitm.html">mitm</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <div class="section" id="internals-of-mitm">
+<h1>Internals of <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code><a class="headerlink" href="#internals-of-mitm" title="Permalink to this headline">#</a></h1>
+<p>Quick guide on the internal structure of <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code>.</p>
+<p>Make sure to check out the documentation for <a class="reference external" href="https://docs.python.org/3/library/asyncio-stream.html">asyncio streams</a> before reading this section.</p>
+<hr class="docutils"/>
+<div class="section" id="core">
+<h2>Core<a class="headerlink" href="#core" title="Permalink to this headline">#</a></h2>
+<p>There are two (simple) core items that <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> is built around:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="mitm.core.Host">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mitm.core.</span></span><span class="sig-name descname"><span class="pre">Host</span></span><a class="headerlink" href="#mitm.core.Host" title="Permalink to this definition">#</a></dt>
+<dd><p>A host is a representation of a remote host - another computer on the internet that <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> is connected to. It contains a <code class="xref py py-obj docutils literal notranslate"><span class="pre">asyncio.StreamReader</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">asyncio.StreamWriter</span></code> object that are used to communicate with the remote host.</p>
+<p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">Host</span></code> class is a simple <a class="reference external" href="https://docs.python.org/3/library/dataclasses.html">dataclass</a> that encapsulates a single connection. It looks like so:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Host</span><span class="p">:</span>
+    <span class="n">reader</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">writer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="mitm.core.Connection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mitm.core.</span></span><span class="sig-name descname"><span class="pre">Connection</span></span><a class="headerlink" href="#mitm.core.Connection" title="Permalink to this definition">#</a></dt>
+<dd><p>A connection is a representation of a connection between two hosts. More specifically, the client host, and the server host (destination server in which the client is trying to communicate to). It contains a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Host</span></code> object for the client, and a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Host</span></code> object for the server.</p>
+<p>A connection also contains an <code class="xref py py-obj docutils literal notranslate"><span class="pre">ssl_context</span></code> object which is used to create an SSL connection between the client and the <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> if needed.</p>
+<p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection</span></code> class, like the <code class="xref py py-obj docutils literal notranslate"><span class="pre">Host</span></code> class above, is a simple <a class="reference external" href="https://docs.python.org/3/library/dataclasses.html">dataclass</a> class. It looks like so:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Connection</span><span class="p">:</span>
+    <span class="n">client</span><span class="p">:</span> <span class="n">Host</span>
+    <span class="n">server</span><span class="p">:</span> <span class="n">Host</span>
+    <span class="n">ssl_context</span><span class="p">:</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLContext</span>
+</pre></div>
+</div>
+</dd></dl>
+<p>The two classes above, which are described in more details within <a class="reference internal" href="../module/core.html#module-mitm.core" title="mitm.core"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.core</span></code></a>, are the core items that <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> is built around.</p>
+</div>
+<hr class="docutils"/>
+<div class="section" id="mitm-server">
+<h2><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> server<a class="headerlink" href="#mitm-server" title="Permalink to this headline">#</a></h2>
+<p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> server boots-up a <code class="xref py py-obj docutils literal notranslate"><span class="pre">asyncio.Server</span></code> object that listens for incoming connections. On start it creates a <code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection</span></code> object with only the client <code class="xref py py-obj docutils literal notranslate"><span class="pre">Host</span></code> resolved, and passes it to the <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> function in <a class="reference internal" href="../module/mitm.html#mitm.mitm.MITM" title="mitm.mitm.MITM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.mitm.MITM</span></code></a>. The start function looks like so:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">server</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">start_server</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mitm</span><span class="p">(</span>
+        <span class="n">Connection</span><span class="p">(</span>
+            <span class="n">client</span><span class="o">=</span><span class="n">Host</span><span class="p">(</span><span class="n">reader</span><span class="o">=</span><span class="n">reader</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">),</span>
+            <span class="n">server</span><span class="o">=</span><span class="n">Host</span><span class="p">(),</span>
+            <span class="n">ssl_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ssl_context</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">),</span>
+    <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>From there, the following steps occur:</p>
+<ol class="arabic simple">
+<li><p>The <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.client_connected" title="mitm.middleware.Middleware.client_connected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.client_connected</span></code></a> function is called for all middlewares.</p></li>
+<li><p>The minimum bytes needed to identify which protocol is being used is read from the client connection.</p></li>
+<li><p>The <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.client_data" title="mitm.middleware.Middleware.client_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.client_data</span></code></a> function is called for all middlewares.</p></li>
+<li><p>The data is cycled through all protocols via <a class="reference internal" href="../module/protocol.html#mitm.protocol.Protocol.connect" title="mitm.protocol.Protocol.connect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.protocol.Protocol.connect</span></code></a> until one protocol returns <code class="xref py py-obj docutils literal notranslate"><span class="pre">True</span></code> to indicate it has successfully resolved, and connected to the host.</p></li>
+<li><p>Two possible outcomes can happen here:</p>
+<ul class="simple">
+<li><p>If the no protocol was successful the connection is closed with the client, and the <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.client_disconnected" title="mitm.middleware.Middleware.client_disconnected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.client_disconnected</span></code></a> function is called for all middlewares.</p></li>
+<li><p>If connection to the destination server was successful, then the <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.server_connected" title="mitm.middleware.Middleware.server_connected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.server_connected</span></code></a> function is called for all middlewares.</p></li>
+</ul>
+</li>
+<li><p>If the server connected successfully, then the <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> begins a cycle where it relays data between the client and the server. When the data flow is from client to server, the <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.client_data" title="mitm.middleware.Middleware.client_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.client_data</span></code></a> function is called for all middlewares. When the data flow is from server to client, the <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.server_data" title="mitm.middleware.Middleware.server_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.server_data</span></code></a> function is called for all middlewares.</p></li>
+<li><p>Once the server and client are done communicating, or the <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> server times out, the <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.client_disconnected" title="mitm.middleware.Middleware.client_disconnected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.client_disconnected</span></code></a> and <a class="reference internal" href="../module/middleware.html#mitm.middleware.Middleware.server_disconnected" title="mitm.middleware.Middleware.server_disconnected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.middleware.Middleware.server_disconnected</span></code></a> function is called for all middlewares.</p></li>
+</ol>
+</div>
+<hr class="docutils"/>
+<div class="section" id="customizing">
+<h2>Customizing<a class="headerlink" href="#customizing" title="Permalink to this headline">#</a></h2>
+<p>With the knowledge of the internals of <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code>, we can move on to customizing <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> by adding custom protocols and middlewares. Checkout the next sections for more details.</p>
+</div>
+</div>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="protocols.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Custom <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm.Protocol</span></code></div>
+              </div>
+              <svg><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../introduction/how-mitm-works.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">How mitm works</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2021, Felipe Faria
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            Contents
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Internals of <code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code></a><ul>
+<li><a class="reference internal" href="#core">Core</a></li>
+<li><a class="reference internal" href="#mitm-server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mitm</span></code> server</a></li>
+<li><a class="reference internal" href="#customizing">Customizing</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    </body>
+</html>
